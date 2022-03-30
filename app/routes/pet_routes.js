@@ -29,6 +29,7 @@ router.get('/pets', (req, res, next) => {
     // we will allow access to view all the pets, by skipping 'requireToken'
     // if we wanted to make this a protected resource, we'd just need to add that middleware as the second arg to our get(like we did in create for our post)
     Pet.find()
+        .populate('owner')
         .then(pets => {
             // pets will be an array of mongoose documents
             // so we want to turn them into POJO (plain ol' js objects)
@@ -48,6 +49,7 @@ router.get('/pets', (req, res, next) => {
 router.get('/pets/:id', (req, res, next) => {
     // we get the id from req.params.id -> :id
     Pet.findById(req.params.id)
+        .populate('owner')
         .then(handle404)
         // if its successful, respond with an object as json
         .then(pet => res.status(200).json({ pet: pet.toObject() }))
@@ -70,7 +72,28 @@ router.post('/pets', requireToken, (req, res, next) => {
 })
 
 // UPDATE
+
+
 // REMOVE
+//DELETE /pets/6244676c8386042d9dc061de
+router.delete('/pets/:id', requireToken, (req, res, next) => {
+    // then find the pet by id
+    Pet.findById(req.params.id)
+    // first handle the 404 if any
+        .then(handle404)
+    // use requireOwnership middleware to make sure the right person is making this request
+        .then(pet => {
+            // requireOwnership needs two arguments
+            // these are the req, and the document itself
+            requireOwnership(req, pet)
+            // delete if the middleware doesnt throw an error
+            pet.deleteOne()
+        })
+    // send back a 204 no content status
+        .then(() => res.sendStatus(204))
+    // if error occurs, pass to the handler
+        .catch(next)
+})
 
 
 // replace with routes
