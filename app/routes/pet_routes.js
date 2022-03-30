@@ -72,6 +72,25 @@ router.post('/pets', requireToken, (req, res, next) => {
 })
 
 // UPDATE
+// PATCH /pets/62446b1378198a7061eaff2a
+router.patch('/pets/:id', requireToken, removeBlanks, (req, res, next) => {
+    // if the client attempts to change the owner of the pet, we can disallow that from the getgo
+    delete req.body.owner
+    // then we find the pet by the id
+    Pet.findById(req.params.id)
+    // handle our 404
+        .then(handle404)
+    // requireOwnership and update the pet
+        .then(pet => {
+            requireOwnership(req, pet)
+
+            return pet.updateOne(req.body.pet)
+        })
+    // send a 204 no content if successful
+        .then(() => res.sendStatus(204))
+    // pass to errorhandler if not successful
+        .catch(next)
+})
 
 
 // REMOVE
